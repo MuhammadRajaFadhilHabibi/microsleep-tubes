@@ -480,7 +480,8 @@ def main():
             camera.release()
 
 # -------------------------------------------------------
-    # MODE 2: VIDEO ANALYSIS (OPTIMIZED FOR CLOUD)
+# -------------------------------------------------------
+    # MODE 2: VIDEO ANALYSIS (REVISI FINAL: AKURASI TINGGI + ANTI LAG)
     # -------------------------------------------------------
     elif mode == "📹 Video Analysis":
         st.markdown("""
@@ -515,23 +516,24 @@ def main():
                 
                 progress_bar = st.progress(0)
                 status_text = st.empty()
-                st_video = st.empty() # Placeholder untuk gambar
+                st_video = st.empty()
                 
                 drowsy_start = None
                 alert_count = 0
                 frame_count = 0
                 processed_count = 0
                 
-                # --- KONFIGURASI OPTIMASI CLOUD ---
-                # Resize lebar frame agar ringan (CPU & Bandwidth friendly)
-                target_width = 480 
+                # --- KONFIGURASI PENTING ---
+                # 1. Target Width 640: Standar YOLO. Jangan dikecilkan lagi agar mata terbaca.
+                target_width = 640 
                 
-                # Skip frame logic (User setting)
+                # 2. Skip Rate: Mengikuti settingan sidebar kamu.
                 skip_rate = frame_skip 
                 
-                # Display logic: Hanya tampilkan ke layar setiap N frame yang DIPROSES
-                # Ini mengurangi lag jaringan. Video di layar akan terlihat agak 'lompat', tapi real-time.
-                display_every_n_processed = 3 
+                # 3. Display Ratio: Ini kunci ANTI LAG.
+                # Kita hanya update gambar di layar setiap 3 frame yang selesai diproses.
+                # Backend kerja keras, tapi Internet kerja santai.
+                display_every_n = 3 
                 
                 while vf.isOpened():
                     ret, frame = vf.read()
@@ -540,65 +542,66 @@ def main():
                     
                     frame_count += 1
                     
-                    # 1. SKIP FRAME (Agar pemrosesan lebih cepat selesai)
+                    # LOGIC 1: SKIP FRAME (Untuk mempercepat durasi total)
                     if frame_count % skip_rate != 0:
                         continue
                     
                     processed_count += 1
                     
-                    # 2. RESIZE FRAME (Kunci agar ringan di Cloud)
+                    # LOGIC 2: RESIZE KE 640 (Standar Akurasi)
                     height, width = frame.shape[:2]
-                    aspect_ratio = width / height
-                    new_width = target_width
-                    new_height = int(new_width / aspect_ratio)
-                    frame = cv2.resize(frame, (new_width, new_height))
+                    if width > 640: # Hanya resize jika gambar aslinya kegedean
+                        aspect_ratio = width / height
+                        new_width = target_width
+                        new_height = int(new_width / aspect_ratio)
+                        frame = cv2.resize(frame, (new_width, new_height))
                     
-                    # 3. PROSES YOLO
-                    # imgsz=320 mempercepat inferensi YOLO di CPU lemah
+                    # LOGIC 3: DETEKSI YOLO (Tanpa kompresi imgsz)
                     start_t = time.time()
-                    results = model(frame, conf=conf_threshold, verbose=False, imgsz=320)
+                    # Kita hapus 'imgsz=320' agar AI tidak rabun
+                    results = model(frame, conf=conf_threshold, verbose=False)
                     
-                    # Logika Drowsy
+                    # Cek hasil deteksi
                     status = "awake"
                     for r in results:
                         for box in r.boxes:
                             cls_id = int(box.cls[0])
+                            # Cek nama class
                             if hasattr(model, 'names') and model.names[cls_id] == 'drowsy':
                                 status = "drowsy"
-                            elif cls_id == 1:
+                            # Fallback ID (Jaga-jaga jika names tidak load)
+                            elif cls_id == 1: 
                                 status = "drowsy"
                     
-                    # Hitung Timer
+                    # Hitung Durasi Ngantuk
                     elapsed = 0.0
                     if status == "drowsy":
                         if drowsy_start is None: drowsy_start = time.time()
                         elapsed = time.time() - drowsy_start
                         
                         if elapsed > alarm_trigger:
-                            # Alarm logic
                             if elapsed > alarm_trigger and elapsed < alarm_trigger + 0.2: 
                                 alert_count += 1
-                        else:
-                            pass
                     else:
                         drowsy_start = None
 
-                    # 4. VISUALISASI HASIL (HUD)
+                    # LOGIC 4: VISUALISASI
                     annotated_frame = results[0].plot()
                     frame_overlay = draw_hud_overlay(annotated_frame, status, elapsed, alert_count, alarm_trigger)
                     
-                    # 5. UPDATE PROGRESS BAR (Setiap 5 frame proses agar tidak membebani UI)
+                    # LOGIC 5: UPDATE UI (THROTTLED - AGAR TIDAK LAG)
+                    
+                    # Update Progress Bar (Setiap 5 frame)
                     if processed_count % 5 == 0:
                         progress_bar.progress(min(frame_count / total_frames, 1.0))
                         status_text.text(f"Processing... {int((frame_count/total_frames)*100)}%")
                     
-                    # 6. TAMPILKAN VIDEO (THROTTLING)
-                    # Kita hanya kirim gambar ke browser setiap 'display_every_n_processed' kali
-                    # Ini mencegah browser 'choking' karena terlalu banyak gambar dikirim lewat internet
-                    if processed_count % display_every_n_processed == 0:
+                    # Update Gambar Video (Setiap 'display_every_n' frame)
+                    # Ini mencegah browser keberatan load gambar
+                    if processed_count % display_every_n == 0:
                         st_video.image(cv2.cvtColor(frame_overlay, cv2.COLOR_BGR2RGB), use_container_width=True)
                         
-                        # Update metrics real-time di sini
+                        # Update Angka/Teks (Real-time is fine here)
                         if status == "drowsy":
                              st_status.markdown(f'<div class="metric-value" style="color:#ff6b6b">⚠️ DROWSY</div>', unsafe_allow_html=True)
                         else:
@@ -683,3 +686,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+
