@@ -23,7 +23,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# CSS Styling (Sama seperti sebelumnya agar tetap keren)
+# CSS Styling Modern Premium (Sama seperti code kedua)
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
@@ -67,6 +67,10 @@ st.markdown("""
         border-right: 1px solid rgba(102, 126, 234, 0.2);
     }
 
+    section[data-testid="stSidebar"] > div {
+        background: transparent;
+    }
+
     /* Button Styling */
     .stButton > button {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -87,6 +91,17 @@ st.markdown("""
         background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
     }
 
+    .stSlider > div > div > div {
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    }
+
+    hr {
+        border: none;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.5), transparent);
+        margin: 30px 0;
+    }
+
     .stFileUploader {
         background: rgba(102, 126, 234, 0.05);
         border: 2px dashed rgba(102, 126, 234, 0.3);
@@ -98,6 +113,40 @@ st.markdown("""
     .stFileUploader:hover {
         border-color: rgba(102, 126, 234, 0.6);
         background: rgba(102, 126, 234, 0.1);
+    }
+
+    .stImage {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 10px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+    }
+
+    .section-header {
+        color: #e2e8f0;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin: 25px 0 15px 0;
+        font-family: 'Space Grotesk', sans-serif;
+        letter-spacing: -0.5px;
     }
 
     .info-box {
@@ -132,22 +181,21 @@ def main():
     st.markdown("<p class='subtitle'>CLOUD DEPLOYMENT VERSION</p>", unsafe_allow_html=True)
     st.markdown("---")
 
-    # --- SIDEBAR SEDERHANA ---
+    # --- SIDEBAR PREMIUM ---
     with st.sidebar:
         st.markdown("""
         <div style='text-align: center; padding: 30px 20px; margin-bottom: 30px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2)); border-radius: 20px; border: 1px solid rgba(102, 126, 234, 0.3);'>
-            <div style='font-size: 3.5rem; margin-bottom: 10px;'>☁️</div>
-            <div style='font-size: 1.5rem; font-weight: 700; color: #ffffff; font-family: Space Grotesk, sans-serif;'>Cloud App</div>
-            <div style='font-size: 0.75rem; color: #a0aec0; letter-spacing: 2px; margin-top: 5px;'>IMAGE ANALYSIS ONLY</div>
+            <div style='font-size: 3.5rem; margin-bottom: 10px;'>👁️</div>
+            <div style='font-size: 1.5rem; font-weight: 700; color: #ffffff; font-family: Space Grotesk, sans-serif;'>Microsleep</div>
+            <div style='font-size: 0.75rem; color: #a0aec0; letter-spacing: 2px; margin-top: 5px;'>DETECTION SYSTEM</div>
         </div>
         """, unsafe_allow_html=True)
         
-        st.info("ℹ️ Note: Versi Cloud ini dioptimalkan untuk Image Analysis. Untuk demo Video Real-time menggunakan GPU, silakan lihat Video Presentasi.")
-
         st.markdown("---")
         st.markdown("<div class='section-header'>🎯 Model Sensitivity</div>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #a0aec0; font-size: 0.85rem; margin-bottom: 10px;'>Adjust detection confidence threshold</p>", unsafe_allow_html=True)
         conf_threshold = st.slider("Confidence", 0.0, 1.0, 0.25, 0.05, label_visibility="collapsed")
-        st.markdown(f"<div class='info-box'>Confidence: <strong>{conf_threshold:.0%}</strong></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='info-box'>Confidence: <strong>{conf_threshold:.0%}</strong> {'🟢 High' if conf_threshold > 0.6 else '🟡 Medium' if conf_threshold > 0.3 else '🔴 Low'}</div>", unsafe_allow_html=True)
 
     # --- LOAD MODEL ---
     model = load_model()
@@ -155,11 +203,11 @@ def main():
         st.error("❌ MODEL NOT FOUND (best.pt). Pastikan file model sudah diupload ke GitHub.")
         st.stop()
 
-    # --- MAIN UI (HANYA IMAGE) ---
+    # --- MAIN UI (IMAGE ANALYSIS) ---
     st.markdown("""
     <div style='background: rgba(102, 126, 234, 0.1); padding: 25px; border-radius: 16px; border: 1px solid rgba(102, 126, 234, 0.2); margin-bottom: 25px;'>
         <h3 style='color: #e2e8f0; margin: 0 0 10px 0;'>🖼️ Image Analysis Mode</h3>
-        <p style='color: #a0aec0; margin: 0; font-size: 0.9rem;'>Upload a single image to detect drowsiness (Microsleep).</p>
+        <p style='color: #a0aec0; margin: 0; font-size: 0.9rem;'>Upload a single image to detect drowsiness (Microsleep). Supported formats: JPG, PNG, JPEG</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -184,7 +232,6 @@ def main():
                 time.sleep(0.5) # Simulasi loading sebentar agar smooth
                 
                 # YOLO Process
-                # Kita tidak perlu resize paksa di sini karena image processing sekali jalan biasanya ringan
                 res = model(image, conf=conf_threshold)
                 res_plotted = res[0].plot()
                 
@@ -208,7 +255,7 @@ def main():
                     st.markdown("<h3 style='text-align: center; color: #e2e8f0; margin-bottom: 15px;'>🤖 Detection Result</h3>", unsafe_allow_html=True)
                     st.image(cv2.cvtColor(res_plotted, cv2.COLOR_BGR2RGB), use_container_width=True)
                     
-                    # Tampilkan hasil dengan kotak warna
+                    # Tampilkan hasil dengan kotak warna premium
                     if status_final == 'drowsy':
                         st.markdown(f"""
                         <div style='background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); 
